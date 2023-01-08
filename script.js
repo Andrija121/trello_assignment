@@ -1,7 +1,7 @@
 let root = document.getElementById("root");
 
 class todoList {
-  constructor(place, title = "Test list") {
+  constructor(place, title) {
     this.place = place;
     this.title = title;
     this.cardArray = [];
@@ -17,6 +17,38 @@ class todoList {
   render() {
     this.createToDoListElement();
     this.place.append(this.todoListElement);
+    this.todoListElement.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      const afterElement = this.getDragAfterElement(
+        this.todoListElement,
+        e.clientY
+      );
+      const draggable = document.querySelector(".dragging");
+      this.todoListElement.appendChild(draggable);
+    });
+  }
+  getDragAfterElement(todoListElement, y) {
+    todoListElement = this.todoListElement;
+
+    const draggableElements = [
+      [...todoListElement.querySelectorAll("card:not(.dragging)")],
+    ];
+
+    return draggableElements.reduce(
+      (closest, child) => {
+        const box = todoListElement.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && closest.offset) {
+          return {
+            offset: offset,
+            element: todoListElement.querySelector("card"),
+          };
+        } else {
+          return closest;
+        }
+      },
+      { offset: Number.NEGATIVE_INFINITY }
+    ).element;
   }
 
   createToDoListElement() {
@@ -25,6 +57,7 @@ class todoList {
     this.h2.innerText = this.title;
     this.input = document.createElement("input");
     this.input.classList.add("comment");
+    this.input.placeholder = "Enter your text";
     this.button = document.createElement("button");
     this.button.innerText = "Add";
     this.button.classList.add("btn-save");
@@ -59,11 +92,18 @@ class Card {
       comments: [],
     };
     this.render();
+    this.card.draggable = true;
   }
 
   render() {
     this.card = document.createElement("div");
     this.card.classList.add("card");
+    this.card.addEventListener("dragstart", () => {
+      this.card.classList.add("dragging");
+    });
+    this.card.addEventListener("dragend", () => {
+      this.card.classList.remove("dragging");
+    });
     this.card.addEventListener("click", (e) => {
       if (e.target != this.deleteButton) {
         this.showMenu.call(this);
@@ -218,7 +258,7 @@ class EditableText {
 
     function clickSaveButton(event, object) {
       // Number 13 is the "Enter" key on the keyboard
-      if (event.keyCode === 13) {
+      if (event.keyCode === 1) {
         // Cancel the default action, if needed
         event.preventDefault();
         // Trigger the button element with a click
@@ -270,7 +310,3 @@ addTodoListButton.addEventListener("click", () => {
     addTodoListInput.value = "";
   }
 });
-
-let todoList1 = new todoList(root);
-
-todoList1.input.value = "Enter your text";
